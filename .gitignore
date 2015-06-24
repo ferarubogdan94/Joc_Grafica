@@ -1,0 +1,21 @@
+# binary folders
+Compiled
+ipch
+
+# executables
+*.exe
+
+# Visual Studio
+*.ilk
+*.pdb
+*.suo
+*.sdf
+*.idb
+*.ipch
+*.opensdf
+
+*.sln
+*.vcproj
+*.vcxproj
+*.user
+*.filters
