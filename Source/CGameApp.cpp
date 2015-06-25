@@ -318,7 +318,7 @@ bool CGameApp::BuildObjects()
 
 
 	bee = new Bee(m_pMap);
-	bee->Init(Vec2(300, 300));
+	bee->Init(Vec2(900, 300));
 
 	// Success!
 	return true;
@@ -475,7 +475,7 @@ void CGameApp::DrawObjects()
 
 	m_pScore->setScore(m_pPlayer.lock()->m_score);
 	m_pScore->drawScore();
-
+	
 	bee->Draw();
 
 	DrawFunctor drawFn;

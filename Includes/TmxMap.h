@@ -20,7 +20,7 @@ enum  DIRECTION
 class TmxMap : public CGameObject
 {
 public:
-
+	friend class Bee;
   /**
   * Constructs a new TmxMap.
   * @param filename - the name of the input file

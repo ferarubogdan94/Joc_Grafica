@@ -31,10 +31,7 @@ enum BeeStandFrame
 	BSF_Left = 8,
 };
 
-/**
- * Player class handles all player manipulation, some minor physics,
- * update and management as well as rendering.
- */
+
 class Bee : public CGameObject
 {
 public:
@@ -58,7 +55,7 @@ public:
 
 	virtual void ResolveCollision();
 
-	virtual void Draw() const;
+	virtual void Draw();
 
 	virtual int	GetWidth() const
 	{
@@ -94,7 +91,19 @@ public:
 	*/
 	std::weak_ptr<TmxMap> m_pMap;
 
+	/**
+	* Checks if this bee should be activ and if it does then activates it(turn isActive to true) and 
+	* return true otherwise if it is active and shouldn't then deactivate(turn isActive to false) and
+	* return false.
+	*/
+	bool checkActive();
+
 private:
+	/**
+	* A flag to tell whether this bee position is in the screen or not.
+	*/
+	bool isActive;
+
 	AnimatedSprite*	m_pSprite;
 
 	/**

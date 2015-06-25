@@ -228,8 +228,6 @@ void TmxMap::Scroll(DIRECTION scrollDirection)
 void TmxMap::Update(float dt)
 {
   m_prevPos = myPosition;
-
- 
   //CGameObject::Update(dt);
 
   ResolveCollision();

@@ -26,6 +26,7 @@ void Bee::Init(const Vec2& position)
 {
 	standStill = 0.f;
 	valuesPointer = BEE_STEPS - 1;
+	isActive = false;
 
 	myPosition = position;
 	myBodyIsStatic = false;
@@ -53,16 +54,44 @@ void Bee::Init(const Vec2& position)
 	m_pSprite->Play(true);
 }
 
+bool Bee::checkActive()
+{
+	double delta = m_pMap.lock()->m_pixelWidth / 2 - m_pMap.lock()->myPosition.x;
+
+	if (isActive)
+	{
+		if (m_referencePosition.x<0)
+		{
+			isActive = false;
+		}
+	}
+	else
+	{
+		if (m_pMap.lock()->m_screenWidth >= m_referencePosition.x && m_referencePosition.x > 0.0f)
+		{
+			isActive = true;
+		}
+	}
+
+	return isActive;
+}
+
 void Bee::Update(float dt)
 {
 	ResolveCollision();
 
+	// Update position of the bee related to the position of the map.
 	Vec2 update = m_pMap.lock()->myPosition - m_pMap.lock()->m_prevPos;
-	if (update != Vec2(0.1f, 0.1f))
+	if (update != Vec2(0.1f,0.1f))
 	{
 		standFrame.right += (long)update.x;
 		standFrame.left += (long)update.x;
-		myPosition += update;
+		myPosition.x += (long)update.x;
+		m_referencePosition.x += (long)update.x;
+	}
+
+	if (!checkActive()) {
+		return;
 	}
 
 	standStill += dt;
@@ -106,8 +135,12 @@ void Bee::Update(float dt)
 	// http://www.codeproject.com/KB/audio-video/midiwrapper.aspx (with code also)
 }
 
-void Bee::Draw() const
+void Bee::Draw()
 {
+	if (!checkActive()) {
+		return;
+	}
+
 	CGameObject::Draw();
 
 	RECT r;
