@@ -6,6 +6,7 @@
 #include "AnimatedSprite.h"
 #include "CGameObject.h"
 #include "Rectangle.h"
+#include "TmxMap.h"
 #include <math.h>
 
 enum BeeState
@@ -37,7 +38,7 @@ enum BeeStandFrame
 class Bee : public CGameObject
 {
 public:
-	Bee();
+	Bee(std::shared_ptr<TmxMap>);
 	virtual ~Bee();
 
 public:
@@ -83,13 +84,18 @@ public:
 
 	BeeState m_State;
 
-private:
-	AnimatedSprite*	m_pSprite;
+	/**
+	* A bounding rectangle in which the bee fly.
+	*/
+	RECT standFrame;
 
 	/**
-	 * A bounding rectangle in which the bee fly.
-	 */
-	RECT standFrame;
+	* A pointer to map that help us to manage the position of the bee relating to the map position.
+	*/
+	std::weak_ptr<TmxMap> m_pMap;
+
+private:
+	AnimatedSprite*	m_pSprite;
 
 	/**
 	 * Flag for checking the liveness of the bee.

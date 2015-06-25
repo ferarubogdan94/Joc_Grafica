@@ -161,7 +161,7 @@ private:
   /**
   * The previous position before a collision.
   */
-  Vec2 m_prevPos;
+  public: Vec2 m_prevPos;
 
 };
 

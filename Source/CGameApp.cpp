@@ -308,7 +308,7 @@ bool CGameApp::BuildObjects()
 	auto pPlayer = std::make_shared<CPlayer>();
 	m_vGameObjects.push_back(pPlayer);
 	m_pPlayer = pPlayer;
-	m_pMap = new TmxMap("data/level2.in", "data/tileset.bmp");
+	m_pMap = std::make_shared<TmxMap>("data/level2.in", "data/tileset.bmp");
 
 	m_pScore = new Score(40,40);
 
@@ -317,7 +317,7 @@ bool CGameApp::BuildObjects()
 	m_pBackground->myPosition.y = MAP_CENTER_Y;
 
 
-	bee = new Bee();
+	bee = new Bee(m_pMap);
 	bee->Init(Vec2(300, 300));
 
 	// Success!
@@ -344,9 +344,12 @@ void CGameApp::ReleaseObjects()
 	// this will automatically call the d-tors for each shared pointer objects
 	m_vGameObjects.clear();
 	SAFE_DELETE(m_pScore);
-	SAFE_DELETE(m_pMap);
 	SAFE_DELETE(m_pBBuffer);
 	SAFE_DELETE(m_pBackground);
+	if (m_pMap.unique()) 
+	{
+		m_pMap.reset();
+	}
 	SAFE_DELETE(bee);
 }
 
@@ -414,6 +417,8 @@ void CGameApp::ProcessInput()
 	// Retrieve keyboard state
 	if (!GetKeyboardState(pKeyBuffer)) return;
 
+	auto m_pMap_tmp = m_pMap.get();
+
 	if (pKeyBuffer[VK_SPACE] & 0xF0)
 	{
 		m_pPlayer.lock()->Jump();
@@ -423,14 +428,16 @@ void CGameApp::ProcessInput()
   {
     // scroll the map with the player velocity
     m_pPlayer.lock()->WalkLeft();
-    m_pMap->Scroll(DIRECTION::DIR_LEFT);
+	m_pMap_tmp->Scroll(DIRECTION::DIR_LEFT);
+	
   }
 
   if (pKeyBuffer[VK_RIGHT] & 0xF0)
   {
     // scroll the map with the player velocity
     m_pPlayer.lock()->WalkRight();
-    m_pMap->Scroll(DIRECTION::DIR_RIGHT);
+	m_pMap_tmp->Scroll(DIRECTION::DIR_RIGHT);
+	
   }
 }
 
@@ -448,7 +455,8 @@ void CGameApp::AnimateObjects()
 
 		UpdateFunctor updateFn(dt);
 		std::for_each(m_vGameObjects.begin(), m_vGameObjects.end(), updateFn);
-		m_pMap->Update(dt);
+
+		m_pMap.get()->Update(dt);
 		bee->Update(dt);
 	}
 }
@@ -473,7 +481,8 @@ void CGameApp::DrawObjects()
 	DrawFunctor drawFn;
 	std::for_each(m_vGameObjects.begin(), m_vGameObjects.end(), drawFn);
 
-	m_pMap->Draw();
+	m_pMap.get()->Draw();
+
 	DrawHUD();
 	m_pBBuffer->present();
 }
@@ -525,7 +534,9 @@ void CGameApp::CollisionDetection()
 
   Vec2 pos;
   CRectangle plR = m_pPlayer.lock()->GetRectangle();
-  vector<CRectangle> rect = m_pMap->GetSurroundingTiles(plR, "walls");
+  auto m_pMap_tmp = m_pMap.get();
+
+  vector<CRectangle> rect = m_pMap_tmp->GetSurroundingTiles(plR, "walls");
 
   for (CRectangle r : rect)
   {
@@ -555,14 +566,15 @@ void CGameApp::CollisionDetection()
         continue;
       }
       //Ox collision
+
       if (plR.IsLeft(r))
       {
         m_pPlayer.lock()->myCollisionSide |= CollisionSide::CS_Right;
-        m_pMap->myCollisionSide |= CollisionSide::CS_Right;
+        m_pMap_tmp->myCollisionSide |= CollisionSide::CS_Right;
       }
       else
       {
-        m_pMap->myCollisionSide |= CollisionSide::CS_Left;
+        m_pMap_tmp->myCollisionSide |= CollisionSide::CS_Left;
         m_pPlayer.lock()->myCollisionSide |= CollisionSide::CS_Left;
       }
     }
@@ -570,13 +582,13 @@ void CGameApp::CollisionDetection()
   m_pPlayer.lock()->m_prevPosition = pos;
 
   // detect collison with pickup objects
-  rect = m_pMap->GetSurroundingTiles(plR, "pickup");
+  rect = m_pMap_tmp->GetSurroundingTiles(plR, "pickup");
   for (CRectangle r : rect)
   {
     if (plR.IntersectsRect(r))
     {
       m_pPlayer.lock()->myCollisionMask |= CollisionFlag::CF_Pickup;
-      m_pMap->RemoveTile(CPoint(r.x + r.width / 2, r.y + r.height / 2), "pickup");
+      m_pMap_tmp->RemoveTile(CPoint(r.x + r.width / 2, r.y + r.height / 2), "pickup");
     }
   }
 

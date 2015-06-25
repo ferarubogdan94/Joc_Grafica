@@ -10,10 +10,11 @@ const double Bee::values[] = { 0.00, 2.78, 5.47, 8.00, 10.28, 12.26, 13.86, 15.0
 13.86, 12.26, 10.28, 8.00, 5.47, 2.78, 0.00, -2.78, -5.47, -8.00, -10.28, -12.26, -13.86, -15.04, -15.76, -16.00,\
 -15.76, -15.04, -13.86, -12.26, -10.28, -8.00, -5.47, -2.78};
 
-Bee::Bee()
+Bee::Bee(std::shared_ptr<TmxMap> map)
 {
 	m_pSprite = new AnimatedSprite("data/bee.bmp", RGB(0xff, 0x00, 0xff));
 	m_bIsAlive = true;
+	m_pMap = map;
 }
 
 Bee::~Bee()
@@ -55,6 +56,14 @@ void Bee::Init(const Vec2& position)
 void Bee::Update(float dt)
 {
 	ResolveCollision();
+
+	Vec2 update = m_pMap.lock()->myPosition - m_pMap.lock()->m_prevPos;
+	if (update != Vec2(0.1f, 0.1f))
+	{
+		standFrame.right += (long)update.x;
+		standFrame.left += (long)update.x;
+		myPosition += update;
+	}
 
 	standStill += dt;
 	if (standStill >= BEE_STAND_TIME)

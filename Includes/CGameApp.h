@@ -143,7 +143,7 @@ private:
 
 	Score *m_pScore;
 
-	TmxMap* m_pMap;
+	std::shared_ptr<TmxMap> m_pMap;
 
 	Sprite* m_pBackground;
 
