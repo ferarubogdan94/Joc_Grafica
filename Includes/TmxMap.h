@@ -8,6 +8,7 @@
 #include "TileSprite.h"
 #include "CPoint.h"
 #include "CGameObject.h"
+
 using namespace std;
 
 enum  DIRECTION
@@ -21,6 +22,7 @@ class TmxMap : public CGameObject
 {
 public:
 	friend class Bee;
+	friend class Bullet;
   /**
   * Constructs a new TmxMap.
   * @param filename - the name of the input file

@@ -306,7 +306,7 @@ bool CGameApp::BuildObjects()
 	m_pBBuffer = new BackBuffer(m_hWnd, m_nViewWidth, m_nViewHeight);
 
 	m_pPlayer = std::make_shared<CPlayer>();
-	
+
 	m_pMap = std::make_shared<TmxMap>("data/level2.in", "data/tileset.bmp");
 
 	m_pScore = new Score(40, 40);
@@ -317,12 +317,12 @@ bool CGameApp::BuildObjects()
 
 	for (int i = 0; i < 4; i++)
 	{
-		std::shared_ptr<Bee> bee1 = std::make_shared<Bee>(m_pMap);
+		std::shared_ptr<Bee> bee1 = std::make_shared<Bee>(m_pMap, m_pPlayer);
 		bee1->Init(Vec2(1000 + (i + 1)* 250.f, 300.f));
 		m_vBees.push_back(bee1);
 	}
 
-	bee = new Bee(m_pMap);
+	bee = new Bee(m_pMap, m_pPlayer);
 	bee->Init(Vec2(1000, 300));
 
 	// Success!
@@ -348,6 +348,7 @@ void CGameApp::ReleaseObjects()
 {
 	// this will automatically call the d-tors for each shared pointer objects
 	m_vBees.clear();
+	m_vBullets.clear();
 	SAFE_DELETE(m_pScore);
 	SAFE_DELETE(m_pBBuffer);
 	SAFE_DELETE(m_pBackground);
@@ -426,7 +427,7 @@ void CGameApp::ProcessInput()
 	// Retrieve keyboard state
 	if (!GetKeyboardState(pKeyBuffer)) return;
 
-	if (pKeyBuffer[VK_SPACE] & 0xF0)
+	if (pKeyBuffer[VK_UP] & 0xF0)
 	{
 		m_pPlayer->Jump();
 	}
@@ -436,14 +437,21 @@ void CGameApp::ProcessInput()
 		// scroll the map with the player velocity
 		m_pPlayer->WalkLeft();
 		m_pMap->Scroll(DIRECTION::DIR_LEFT);
-
+		m_pPlayer->setOrientation(PlayerOrientation::Left);
 	}
 
 	if (pKeyBuffer[VK_RIGHT] & 0xF0)
 	{
 		// scroll the map with the player velocity
 		m_pPlayer->WalkRight();
+		m_pPlayer->setOrientation(PlayerOrientation::Right);
 		m_pMap->Scroll(DIRECTION::DIR_RIGHT);
+	}
+
+	if (pKeyBuffer[VK_SPACE] & 0xF0)
+	{
+		Sleep(100);
+		m_vBullets.push_back(std::make_shared<Bullet>(BulletType::Player_Bullet, m_pPlayer->myPosition, m_pPlayer, m_pMap));
 	}
 }
 
@@ -456,6 +464,7 @@ void CGameApp::AnimateObjects()
 	{
 		ExpiredPredicate expiredPred;
 		m_vBees.erase(std::remove_if(m_vBees.begin(), m_vBees.end(), expiredPred), m_vBees.end());
+		m_vBullets.erase(std::remove_if(m_vBullets.begin(), m_vBullets.end(), expiredPred), m_vBullets.end());
 
 		float dt = m_Timer.GetTimeElapsed();
 
@@ -464,6 +473,7 @@ void CGameApp::AnimateObjects()
 
 		UpdateFunctor updateFn(dt);
 		std::for_each(m_vBees.begin(), m_vBees.end(), updateFn);
+		std::for_each(m_vBullets.begin(), m_vBullets.end(), updateFn);
 		bee->Update(dt);
 	}
 }
@@ -491,9 +501,11 @@ void CGameApp::DrawObjects()
 
 	DrawFunctor drawFn;
 	std::for_each(m_vBees.begin(), m_vBees.end(), drawFn);
+	std::for_each(m_vBullets.begin(), m_vBullets.end(), drawFn);
+
 
 	bee->Draw();
-	
+
 	m_pBBuffer->present();
 }
 
@@ -504,56 +516,59 @@ void CGameApp::DrawObjects()
 void CGameApp::CollisionDetection()
 {
 	m_pPlayer->myCollisionSide = CS_None;
-	/*
+
 	// collision detection with the main frame
-	for (auto it = m_vGameObjects.begin(); it != m_vGameObjects.end(); ++it)
+	for (auto it = m_vBullets.begin(); it != m_vBullets.end(); ++it)
 	{
-	CGameObject * pGameObj = it->get();
-	Vec2 pos = pGameObj->myPosition;
+		CGameObject * pGameObj = it->get();
+		Vec2 pos = pGameObj->myPosition;
+		
+		pGameObj->myCollisionSide = CS_None;
+		/*
+		if ((pGameObj->myCollisionMask & CF_Screen) == 0) {
+			continue;
+		}
+		
+		if (pGameObj->myBodyIsStatic) {
+		continue;
+		}
+		*/
+		int dx = (int)pos.x - pGameObj->GetWidth() / 2;
+		if (dx < 0)
+		{
+			pGameObj->myCollisionSide |= CS_Left;
+		}
 
-	pGameObj->myCollisionSide = CS_None;
+		dx = (int)pos.x - (m_nViewWidth - pGameObj->GetWidth() / 2);
+		if (dx > 0)
+		{
+			pGameObj->myCollisionSide |= CS_Right;
+		}
+		/*
+		int dy = (int)pos.y - pGameObj->GetHeight() / 2;
+		if (dy < 0)
+		{
+			pGameObj->myCollisionSide |= CS_Top;
+		}
 
-	if ((pGameObj->myCollisionMask & CF_Screen) == 0) {
-	continue;
+		dy = (int)pos.y - (m_nViewHeight - pGameObj->GetHeight() / 2);
+		if (dy > 0)
+		{
+			pGameObj->myCollisionSide |= CS_Bottom;
+		}
+		*/
 	}
-	if (pGameObj->myBodyIsStatic) {
-	continue;
-	}
-
-	int dx = (int)pos.x - pGameObj->GetWidth() / 2;
-	if (dx < 0)
-	{
-	pGameObj->myCollisionSide |= CS_Left;
-	}
-
-	dx = (int)pos.x - (m_nViewWidth - pGameObj->GetWidth() / 2);
-	if (dx > 0)
-	{
-	pGameObj->myCollisionSide |= CS_Right;
-	}
-
-	int dy = (int)pos.y - pGameObj->GetHeight() / 2;
-	if (dy < 0)
-	{
-	pGameObj->myCollisionSide |= CS_Top;
-	}
-
-	dy = (int)pos.y - (m_nViewHeight - pGameObj->GetHeight() / 2);
-	if (dy > 0)
-	{
-	pGameObj->myCollisionSide |= CS_Bottom;
-	}
-	}
-	*/
 
 	CRectangle plR = m_pPlayer->GetRectangle();
 
+	/*
 	if (plR.IntersectsRect(bee->GetRectangle())) {
-		if (bee->checkActive())
-		{
-			bee->m_bIsAlive = false;
-		}
+	if (bee->checkActive())
+	{
+	bee->m_bIsAlive = false;
 	}
+	}
+	*/
 
 	//check collision between player and bees
 	for (auto it = m_vBees.begin(); it != m_vBees.end(); ++it)
@@ -566,7 +581,7 @@ void CGameApp::CollisionDetection()
 		CRectangle rect = bee_tmp->GetRectangle();
 		if (rect.IntersectsRect(plR))
 		{
-			bee_tmp->m_bIsAlive = false;
+			bee_tmp->myCollisionMask |= BeeCollision::BC_Player;
 		}
 	}
 

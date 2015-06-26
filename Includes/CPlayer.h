@@ -18,6 +18,12 @@ enum PlayerState
 	Jump
 };
 
+enum PlayerOrientation
+{
+	Left,
+	Right,
+};
+
 /**
  * Name : CPlayer (Class)
  * Desc : Player class handles all player manipulation, some minor physics,
@@ -31,7 +37,6 @@ public:
 
 public:
 	void Init(const Vec2& position);
-	virtual void Update(float dt);
 
 	virtual GameObjectType GetObjectType() const 
 	{
@@ -43,7 +48,10 @@ public:
 		return CF_Player;
 	}
 
-	void ResolveCollision();
+	virtual void ResolveCollision();
+
+	virtual void Update(float dt);
+
 	virtual void Draw() const;
 
 	virtual int	GetWidth() const 
@@ -65,6 +73,16 @@ public:
 		return m_bIsAlive;
 	}
 
+	void setOrientation(PlayerOrientation orientation)
+	{
+		playerOrientation = orientation;
+	}
+
+	PlayerOrientation getPlayerOrientation()
+	{
+		return playerOrientation;
+	}
+
 	/**
 	 * Returns the bounding rectangle of the player.
 	 */
@@ -73,6 +91,11 @@ public:
 	PlayerState m_State;
 
 private:
+	/**
+	* Return the part in which the player is oriented.
+	*/
+	PlayerOrientation playerOrientation;
+
 	AnimatedSprite*	m_pSprite;
 
 	bool m_bIsAlive;

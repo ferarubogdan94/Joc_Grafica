@@ -10,11 +10,12 @@ const double Bee::values[] = { 0.00, 2.78, 5.47, 8.00, 10.28, 12.26, 13.86, 15.0
 13.86, 12.26, 10.28, 8.00, 5.47, 2.78, 0.00, -2.78, -5.47, -8.00, -10.28, -12.26, -13.86, -15.04, -15.76, -16.00,\
 -15.76, -15.04, -13.86, -12.26, -10.28, -8.00, -5.47, -2.78};
 
-Bee::Bee(std::shared_ptr<TmxMap> map)
+Bee::Bee(std::shared_ptr<TmxMap> map,std::shared_ptr<CPlayer> player)
 {
 	m_pSprite = new AnimatedSprite("data/bee.bmp", RGB(0xff, 0x00, 0xff));
 	m_bIsAlive = true;
 	m_pMap = map;
+	m_pPlayer = player;
 	oldDelta = 0;
 }
 
@@ -79,7 +80,11 @@ bool Bee::checkActive()
 
 void Bee::Update(float dt)
 {
-	if (!IsAlive()) { return; }
+	if (!IsAlive()) 
+	{
+		return;
+	}
+
 	ResolveCollision();
 
 	// Update position of the bee related to the position of the map.
@@ -222,6 +227,11 @@ void Bee::ResolveCollision()
 			myPosition.x = (float)standFrame.right;
 			valuesPointer = BEE_STEPS - 1;
 		}
+	}
+
+	if (myCollisionMask & BeeCollision::BC_Player)
+	{
+		m_bIsAlive = false;
 	}
 
 	myCollisionMask = BeeStandFrame::BSF_None;

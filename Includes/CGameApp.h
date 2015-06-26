@@ -15,6 +15,7 @@
 #include "TmxMap.h"
 #include "Score.h"
 #include "Bee.h"
+#include "Bullet.h"
 #include <vector>
 #include <memory>
 
@@ -136,7 +137,7 @@ private:
 	 */
 	std::vector<std::shared_ptr<CGameObject>> m_vBees;  
 
-	//std::vector<Bee*> m_vBees;
+	std::vector<std::shared_ptr<CGameObject>> m_vBullets;
 
 	/** 
 	 * A pointer to player.

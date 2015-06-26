@@ -15,8 +15,9 @@
 enum GameObjectType
 {
 	GOT_Invalid = -1,
-	GOT_Player,
-	GOT_Bee,
+	GOT_Player = 0,
+	GOT_Bee = 1,
+	GOT_Bullet = 2,
 };
 
 enum CollisionSide
@@ -25,7 +26,8 @@ enum CollisionSide
 	CS_Left = 1,
 	CS_Right = 2,
 	CS_Top = 4,
-	CS_Bottom = 8
+	CS_Bottom = 8,
+	CS_Bullet = 16,
 };
 
 enum CollisionFlag
@@ -37,6 +39,7 @@ enum CollisionFlag
 	CF_Wall = 8,
 	CF_Enemy = 16,
 	CF_Bee = 32,
+	CF_Bullet = 64,
 };
 
 class IDrawable

@@ -8,6 +8,7 @@
 #include "Rectangle.h"
 #include "TmxMap.h"
 #include <math.h>
+#include "CPlayer.h"
 
 enum BeeState
 {
@@ -20,6 +21,8 @@ enum BeeCollision
 {
 	BC_None = 0,
 	BC_StandFrame = 1,
+	BC_Player = 2,
+	BC_Bullet = 4,
 };
 
 enum BeeStandFrame
@@ -35,7 +38,7 @@ enum BeeStandFrame
 class Bee : public CGameObject
 {
 public:
-	Bee(std::shared_ptr<TmxMap>);
+	Bee(std::shared_ptr<TmxMap>,std::shared_ptr<CPlayer>);
 	virtual ~Bee();
 
 public:
@@ -92,26 +95,30 @@ public:
 	RECT standFrame;
 
 	/**
-	* A pointer to map that help us to manage the position of the bee relating to the map position.
-	*/
-	std::weak_ptr<TmxMap> m_pMap;
-
-	/**
 	* Checks if this bee should be activ and if it does then activates it(turn isActive to true) and 
 	* return true otherwise if it is active and shouldn't then deactivate(turn isActive to false) and
 	* return false.
 	*/
 	bool checkActive();
+	
+private:
+
+	/**
+	* A pointer to map that help us to manage the position of the bee relating to the map position.
+	*/
+	std::weak_ptr<TmxMap> m_pMap;
+
+
+	std::weak_ptr<CPlayer> m_pPlayer;
+	/**
+	* A flag to tell whether this bee position is in the screen or not.
+	*/
+	bool isActive;
 
 	/**
 	* Flag for checking the liveness of the bee.
 	*/
 	bool m_bIsAlive;
-private:
-	/**
-	* A flag to tell whether this bee position is in the screen or not.
-	*/
-	bool isActive;
 
 	AnimatedSprite*	m_pSprite;
 
@@ -124,6 +131,7 @@ private:
 	 * Discret values for modeling a sinusoidal motion.
 	 */
 	static const double values[36];
+
 	int valuesPointer;
 
 	/**

@@ -8,6 +8,7 @@ CPlayer::CPlayer()
   m_pSprite = new AnimatedSprite("data/girl.bmp", RGB(0xff, 0x00, 0xff));
   myCollisionMask = CF_Screen | CF_Wall;
   m_bIsAlive = true;
+  playerOrientation = PlayerOrientation::Right;
 }
 
 CPlayer::~CPlayer()
