@@ -6,7 +6,7 @@ Score::Score(float x, float y)
 	for (int i = 0; i < 10; i++)
 	{
 		path[13] = '0' + i;
-		m_vNumbers.push_back(new Sprite(path, RGB(0xff, 0xff, 0xff)));
+		m_vNumbers.push_back(new Sprite(path, RGB(0xff, 0x00, 0xff)));
 	}
 	m_Score = 0;
 	m_Position.x = x;
@@ -15,7 +15,7 @@ Score::Score(float x, float y)
 
 Score::~Score() {
 	for (auto it = m_vNumbers.begin(); it != m_vNumbers.end(); it++) {
-		delete *it;
+		delete *it;\
 	}
 	m_vNumbers.clear();
 }
