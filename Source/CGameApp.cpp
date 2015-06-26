@@ -522,17 +522,8 @@ void CGameApp::CollisionDetection()
 	{
 		CGameObject * pGameObj = it->get();
 		Vec2 pos = pGameObj->myPosition;
-		
+
 		pGameObj->myCollisionSide = CS_None;
-		/*
-		if ((pGameObj->myCollisionMask & CF_Screen) == 0) {
-			continue;
-		}
-		
-		if (pGameObj->myBodyIsStatic) {
-		continue;
-		}
-		*/
 		int dx = (int)pos.x - pGameObj->GetWidth() / 2;
 		if (dx < 0)
 		{
@@ -544,32 +535,31 @@ void CGameApp::CollisionDetection()
 		{
 			pGameObj->myCollisionSide |= CS_Right;
 		}
-		/*
-		int dy = (int)pos.y - pGameObj->GetHeight() / 2;
-		if (dy < 0)
-		{
-			pGameObj->myCollisionSide |= CS_Top;
-		}
+	}
 
-		dy = (int)pos.y - (m_nViewHeight - pGameObj->GetHeight() / 2);
-		if (dy > 0)
+	//check collision between bullets and bees
+
+	for (auto it1 = m_vBullets.begin(); it1 != m_vBullets.end(); ++it1)
+	{
+		Bullet* bullet_tmp = dynamic_cast<Bullet*>(it1->get());
+		CRectangle bullet_rect = bullet_tmp->GetRectangle();
+		for (auto it = m_vBees.begin(); it != m_vBees.end(); ++it)
 		{
-			pGameObj->myCollisionSide |= CS_Bottom;
+			Bee* bee_tmp = dynamic_cast<Bee*>(it->get());		
+			if (!bee_tmp->checkActive())
+			{
+				continue;
+			}
+			CRectangle rect = bee_tmp->GetRectangle();
+			if (rect.IntersectsRect(bullet_rect))
+			{
+				bee_tmp->myCollisionMask |= BeeCollision::BC_Bullet;
+				bullet_tmp->myCollisionMask |= BulletCollision::BulletC_Bee;
+			}
 		}
-		*/
 	}
 
 	CRectangle plR = m_pPlayer->GetRectangle();
-
-	/*
-	if (plR.IntersectsRect(bee->GetRectangle())) {
-	if (bee->checkActive())
-	{
-	bee->m_bIsAlive = false;
-	}
-	}
-	*/
-
 	//check collision between player and bees
 	for (auto it = m_vBees.begin(); it != m_vBees.end(); ++it)
 	{

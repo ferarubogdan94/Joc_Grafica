@@ -13,6 +13,7 @@ Bullet::Bullet(BulletType type, Vec2 initPos, std::shared_ptr<CPlayer> player,st
 	{
 		m_pSprite = new Sprite("data/bee_bullet.bmp", RGB(0xff, 0x00, 0xff));
 	}
+	myCollisionSide = 0;
 	myCollisionMask = 0;
 	m_bIsAlive = true;
 	float direction = (float)checkDirection(type, player, initPos);
@@ -92,7 +93,9 @@ void Bullet::Draw() const
 
 void Bullet::ResolveCollision()
 {
-	if (myCollisionSide & CS_Left || myCollisionSide & CS_Right || myCollisionMask & CF_Wall || myCollisionMask & CF_Enemy)
+	if (myCollisionMask & BulletCollision::BulletC_Bee ||
+		myCollisionSide & CS_Left || myCollisionSide & CS_Right ||
+		myCollisionMask & CF_Wall || myCollisionMask & CF_Enemy)
 	{
 		m_bIsAlive = false;
 	}

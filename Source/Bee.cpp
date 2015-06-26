@@ -229,7 +229,7 @@ void Bee::ResolveCollision()
 		}
 	}
 
-	if (myCollisionMask & BeeCollision::BC_Player)
+	if (myCollisionMask & BeeCollision::BC_Player || myCollisionMask & BeeCollision::BC_Bullet)
 	{
 		m_bIsAlive = false;
 	}

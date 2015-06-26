@@ -9,11 +9,16 @@
 
 #define SPEED 60
 
-enum BulletType {
+enum BulletType
+{
 	Bee_Bullet,
 	Player_Bullet,
 };
 
+enum BulletCollision
+{
+	BulletC_Bee = 1,
+};
 class Bullet :public CGameObject
 {
 public:
