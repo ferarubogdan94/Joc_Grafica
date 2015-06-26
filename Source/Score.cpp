@@ -15,7 +15,7 @@ Score::Score(float x, float y)
 
 Score::~Score() {
 	for (auto it = m_vNumbers.begin(); it != m_vNumbers.end(); it++) {
-		delete *it;\
+		delete *it;
 	}
 	m_vNumbers.clear();
 }
