@@ -134,12 +134,14 @@ private:
 	/**
 	 * Vector with all game objects.
 	 */
-	std::vector<std::shared_ptr<CGameObject>> m_vGameObjects;  
+	std::vector<std::shared_ptr<CGameObject>> m_vBees;  
+
+	//std::vector<Bee*> m_vBees;
 
 	/** 
 	 * A pointer to player.
 	 */
-	std::weak_ptr<CPlayer> m_pPlayer; 
+	std::shared_ptr<CPlayer> m_pPlayer; 
 
 	Score *m_pScore;
 

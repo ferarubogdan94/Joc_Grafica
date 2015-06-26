@@ -15,6 +15,7 @@ Bee::Bee(std::shared_ptr<TmxMap> map)
 	m_pSprite = new AnimatedSprite("data/bee.bmp", RGB(0xff, 0x00, 0xff));
 	m_bIsAlive = true;
 	m_pMap = map;
+	oldDelta = 0;
 }
 
 Bee::~Bee()
@@ -56,20 +57,20 @@ void Bee::Init(const Vec2& position)
 
 bool Bee::checkActive()
 {
-	double delta = m_pMap.lock()->m_pixelWidth / 2 - m_pMap.lock()->myPosition.x;
-
 	if (isActive)
 	{
-		if (m_referencePosition.x<0)
+		// check if the bee went out from the left side or from the right side
+		if (standFrame.right < 0 || m_pMap.lock()->m_screenWidth <= standFrame.left)
 		{
-			isActive = false;
+		 	isActive = false;
 		}
 	}
 	else
 	{
-		if (m_pMap.lock()->m_screenWidth >= m_referencePosition.x && m_referencePosition.x > 0.0f)
+		// check if the bee went in from the left side or from the right side
+		if (m_pMap.lock()->m_screenWidth > standFrame.left && standFrame.left > 0.0f || standFrame.right > 0 && standFrame.left < 0)
 		{
-			isActive = true;
+   			isActive = true;
 		}
 	}
 
@@ -78,17 +79,18 @@ bool Bee::checkActive()
 
 void Bee::Update(float dt)
 {
+	if (!IsAlive()) { return; }
 	ResolveCollision();
 
 	// Update position of the bee related to the position of the map.
-	Vec2 update = m_pMap.lock()->myPosition - m_pMap.lock()->m_prevPos;
-	if (update != Vec2(0.1f,0.1f))
+	long delta = (long)(m_pMap.lock()->m_pixelWidth / 2 - m_pMap.lock()->myPosition.x);
+	if (fabsl(delta-oldDelta) > 1)
 	{
-		standFrame.right += (long)update.x;
-		standFrame.left += (long)update.x;
-		myPosition.x += (long)update.x;
-		m_referencePosition.x += (long)update.x;
+		standFrame.right -= (delta - oldDelta);
+		standFrame.left -= (delta - oldDelta);
+		myPosition.x -= (delta - oldDelta);
 	}
+	oldDelta = delta;
 
 	if (!checkActive()) {
 		return;
@@ -135,9 +137,15 @@ void Bee::Update(float dt)
 	// http://www.codeproject.com/KB/audio-video/midiwrapper.aspx (with code also)
 }
 
-void Bee::Draw()
+void Bee::Draw() const
 {
-	if (!checkActive()) {
+	if (!IsAlive()) 
+	{ 
+		return; 
+	}
+
+	if (!isActive) 
+	{
 		return;
 	}
 

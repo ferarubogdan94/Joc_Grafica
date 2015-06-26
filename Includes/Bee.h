@@ -55,7 +55,7 @@ public:
 
 	virtual void ResolveCollision();
 
-	virtual void Draw();
+	virtual void Draw() const;
 
 	virtual int	GetWidth() const
 	{
@@ -65,6 +65,11 @@ public:
 	virtual int GetHeight() const
 	{
 		return m_pSprite->GetHeight();
+	}
+
+	virtual bool Expired() const
+	{
+		return !m_bIsAlive;
 	}
 
 	bool IsAlive() const
@@ -98,6 +103,10 @@ public:
 	*/
 	bool checkActive();
 
+	/**
+	* Flag for checking the liveness of the bee.
+	*/
+	bool m_bIsAlive;
 private:
 	/**
 	* A flag to tell whether this bee position is in the screen or not.
@@ -105,11 +114,6 @@ private:
 	bool isActive;
 
 	AnimatedSprite*	m_pSprite;
-
-	/**
-	 * Flag for checking the liveness of the bee.
-	 */
-	bool m_bIsAlive;
 
 	/**
 	* The reference position of the bee in the stand frame.
@@ -126,6 +130,8 @@ private:
 	 * The time in which the bee stands still.
 	 */
 	double standStill;	
+
+	long oldDelta;
 };
 
 #endif

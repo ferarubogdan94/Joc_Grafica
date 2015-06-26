@@ -281,14 +281,14 @@ LRESULT CGameApp::DisplayWndProc(HWND hWnd, UINT Message, WPARAM wParam, LPARAM 
 				m_bActive = true;
 				return 0;
 			}
-			
+
 			//PostQuitMessage(0);
 			break;
 		}
 		break;
 
 	case WM_KEYUP:
-		m_pPlayer.lock()->m_State = PlayerState::Idle;
+		m_pPlayer->m_State = PlayerState::Idle;
 		break;
 	default:
 		return DefWindowProc(hWnd, Message, wParam, lParam);
@@ -305,20 +305,25 @@ bool CGameApp::BuildObjects()
 {
 	m_pBBuffer = new BackBuffer(m_hWnd, m_nViewWidth, m_nViewHeight);
 
-	auto pPlayer = std::make_shared<CPlayer>();
-	m_vGameObjects.push_back(pPlayer);
-	m_pPlayer = pPlayer;
+	m_pPlayer = std::make_shared<CPlayer>();
+	
 	m_pMap = std::make_shared<TmxMap>("data/level2.in", "data/tileset.bmp");
 
-	m_pScore = new Score(40,40);
+	m_pScore = new Score(40, 40);
 
 	m_pBackground = new Sprite("data/back.bmp");
 	m_pBackground->myPosition.x = MAP_CENTER_X;
 	m_pBackground->myPosition.y = MAP_CENTER_Y;
 
+	for (int i = 0; i < 4; i++)
+	{
+		std::shared_ptr<Bee> bee1 = std::make_shared<Bee>(m_pMap);
+		bee1->Init(Vec2(1000 + (i + 1)* 250.f, 300.f));
+		m_vBees.push_back(bee1);
+	}
 
 	bee = new Bee(m_pMap);
-	bee->Init(Vec2(900, 300));
+	bee->Init(Vec2(1000, 300));
 
 	// Success!
 	return true;
@@ -331,7 +336,7 @@ void CGameApp::SetupGameState()
 {
 	srand(timeGetTime());
 
-	m_pPlayer.lock()->Init(Vec2(PLAYER_START_X, PLAYER_START_Y));
+	m_pPlayer->Init(Vec2(PLAYER_START_X, PLAYER_START_Y));
 
 }
 
@@ -342,15 +347,19 @@ void CGameApp::SetupGameState()
 void CGameApp::ReleaseObjects()
 {
 	// this will automatically call the d-tors for each shared pointer objects
-	m_vGameObjects.clear();
+	m_vBees.clear();
 	SAFE_DELETE(m_pScore);
 	SAFE_DELETE(m_pBBuffer);
 	SAFE_DELETE(m_pBackground);
-	if (m_pMap.unique()) 
+	if (m_pMap.unique())
 	{
 		m_pMap.reset();
 	}
 	SAFE_DELETE(bee);
+	if (m_pPlayer.unique())
+	{
+		m_pPlayer.reset();
+	}
 }
 
 /**
@@ -374,18 +383,18 @@ void CGameApp::FrameAdvance()
 	// Get / Display the framerate
 	if (m_LastFrameRate != m_Timer.GetFrameRate())
 	{
-		m_LastFrameRate = m_Timer.GetFrameRate(FrameRate, 50);
+	m_LastFrameRate = m_Timer.GetFrameRate(FrameRate, 50);
 
-		int life = 0;
+	int life = 0;
 
-		if (m_pPlayer.lock())
-		{
-			m_pScore->setScore(m_pPlayer.lock()->m_score);
-			life = m_pPlayer.lock()->m_life;
-		}
-		sprintf_s(TitleBuffer, _T("Honey Collector @ %s\t Player Life: %d"), FrameRate, life);
+	if (m_pPlayer.lock())
+	{
+	m_pScore->setScore(m_pPlayer.lock()->m_score);
+	life = m_pPlayer.lock()->m_life;
+	}
+	sprintf_s(TitleBuffer, _T("Honey Collector @ %s\t Player Life: %d"), FrameRate, life);
 
-		SetWindowText(m_hWnd, TitleBuffer); 
+	SetWindowText(m_hWnd, TitleBuffer);
 	} // End if Frame Rate Altered
 
 	*/
@@ -417,28 +426,25 @@ void CGameApp::ProcessInput()
 	// Retrieve keyboard state
 	if (!GetKeyboardState(pKeyBuffer)) return;
 
-	auto m_pMap_tmp = m_pMap.get();
-
 	if (pKeyBuffer[VK_SPACE] & 0xF0)
 	{
-		m_pPlayer.lock()->Jump();
+		m_pPlayer->Jump();
 	}
 
-  if (pKeyBuffer[VK_LEFT] & 0xF0)
-  {
-    // scroll the map with the player velocity
-    m_pPlayer.lock()->WalkLeft();
-	m_pMap_tmp->Scroll(DIRECTION::DIR_LEFT);
-	
-  }
+	if (pKeyBuffer[VK_LEFT] & 0xF0)
+	{
+		// scroll the map with the player velocity
+		m_pPlayer->WalkLeft();
+		m_pMap->Scroll(DIRECTION::DIR_LEFT);
 
-  if (pKeyBuffer[VK_RIGHT] & 0xF0)
-  {
-    // scroll the map with the player velocity
-    m_pPlayer.lock()->WalkRight();
-	m_pMap_tmp->Scroll(DIRECTION::DIR_RIGHT);
-	
-  }
+	}
+
+	if (pKeyBuffer[VK_RIGHT] & 0xF0)
+	{
+		// scroll the map with the player velocity
+		m_pPlayer->WalkRight();
+		m_pMap->Scroll(DIRECTION::DIR_RIGHT);
+	}
 }
 
 /**
@@ -446,17 +452,18 @@ void CGameApp::ProcessInput()
  */
 void CGameApp::AnimateObjects()
 {
-	if (m_pPlayer.lock()->IsAlive())
+	if (m_pPlayer->IsAlive())
 	{
 		ExpiredPredicate expiredPred;
-		m_vGameObjects.erase(std::remove_if(m_vGameObjects.begin(), m_vGameObjects.end(), expiredPred), m_vGameObjects.end());
+		m_vBees.erase(std::remove_if(m_vBees.begin(), m_vBees.end(), expiredPred), m_vBees.end());
 
 		float dt = m_Timer.GetTimeElapsed();
 
-		UpdateFunctor updateFn(dt);
-		std::for_each(m_vGameObjects.begin(), m_vGameObjects.end(), updateFn);
+		m_pPlayer->Update(dt);
+		m_pMap->Update(dt);
 
-		m_pMap.get()->Update(dt);
+		UpdateFunctor updateFn(dt);
+		std::for_each(m_vBees.begin(), m_vBees.end(), updateFn);
 		bee->Update(dt);
 	}
 }
@@ -473,130 +480,159 @@ void CGameApp::DrawObjects()
 	// nu cred ca e nevoie de asta
 	//HDC hdc = m_pBBuffer->getDC();
 
-	m_pScore->setScore(m_pPlayer.lock()->m_score);
+	m_pScore->setScore(m_pPlayer->m_score);
 	m_pScore->drawScore();
-	
-	bee->Draw();
 
-	DrawFunctor drawFn;
-	std::for_each(m_vGameObjects.begin(), m_vGameObjects.end(), drawFn);
+	m_pPlayer->Draw();
 
-	m_pMap.get()->Draw();
+	m_pMap->Draw();
 
 	DrawHUD();
+
+	DrawFunctor drawFn;
+	std::for_each(m_vBees.begin(), m_vBees.end(), drawFn);
+
+	bee->Draw();
+	
 	m_pBBuffer->present();
 }
+
 
 /**
  * Detects and handles collision
  */
 void CGameApp::CollisionDetection()
 {
+	m_pPlayer->myCollisionSide = CS_None;
+	/*
 	// collision detection with the main frame
 	for (auto it = m_vGameObjects.begin(); it != m_vGameObjects.end(); ++it)
 	{
-		CGameObject * pGameObj = it->get();
-		Vec2 pos = pGameObj->myPosition;
+	CGameObject * pGameObj = it->get();
+	Vec2 pos = pGameObj->myPosition;
 
-		pGameObj->myCollisionSide = CS_None;
+	pGameObj->myCollisionSide = CS_None;
 
-		if ((pGameObj->myCollisionMask & CF_Screen) == 0) {
-			continue;
-		}
-		if (pGameObj->myBodyIsStatic) {
-			continue;
-		}
-		
-		int dx = (int)pos.x - pGameObj->GetWidth() / 2;
-		if (dx < 0)
+	if ((pGameObj->myCollisionMask & CF_Screen) == 0) {
+	continue;
+	}
+	if (pGameObj->myBodyIsStatic) {
+	continue;
+	}
+
+	int dx = (int)pos.x - pGameObj->GetWidth() / 2;
+	if (dx < 0)
+	{
+	pGameObj->myCollisionSide |= CS_Left;
+	}
+
+	dx = (int)pos.x - (m_nViewWidth - pGameObj->GetWidth() / 2);
+	if (dx > 0)
+	{
+	pGameObj->myCollisionSide |= CS_Right;
+	}
+
+	int dy = (int)pos.y - pGameObj->GetHeight() / 2;
+	if (dy < 0)
+	{
+	pGameObj->myCollisionSide |= CS_Top;
+	}
+
+	dy = (int)pos.y - (m_nViewHeight - pGameObj->GetHeight() / 2);
+	if (dy > 0)
+	{
+	pGameObj->myCollisionSide |= CS_Bottom;
+	}
+	}
+	*/
+
+	CRectangle plR = m_pPlayer->GetRectangle();
+
+	if (plR.IntersectsRect(bee->GetRectangle())) {
+		if (bee->checkActive())
 		{
-			pGameObj->myCollisionSide |= CS_Left;
-		}
-
-		dx = (int)pos.x - (m_nViewWidth - pGameObj->GetWidth() / 2);
-		if (dx > 0)
-		{
-			pGameObj->myCollisionSide |= CS_Right;
-		}
-
-		int dy = (int)pos.y - pGameObj->GetHeight() / 2;
-		if (dy < 0)
-		{
-			pGameObj->myCollisionSide |= CS_Top;
-		}
-
-		dy = (int)pos.y - (m_nViewHeight - pGameObj->GetHeight() / 2);
-		if (dy > 0)
-		{
-			pGameObj->myCollisionSide |= CS_Bottom;
+			bee->m_bIsAlive = false;
 		}
 	}
 
-  Vec2 pos;
-  CRectangle plR = m_pPlayer.lock()->GetRectangle();
-  auto m_pMap_tmp = m_pMap.get();
+	//check collision between player and bees
+	for (auto it = m_vBees.begin(); it != m_vBees.end(); ++it)
+	{
+		Bee* bee_tmp = dynamic_cast<Bee*>(it->get());
+		if (!bee_tmp->checkActive())
+		{
+			continue;
+		}
+		CRectangle rect = bee_tmp->GetRectangle();
+		if (rect.IntersectsRect(plR))
+		{
+			bee_tmp->m_bIsAlive = false;
+		}
+	}
 
-  vector<CRectangle> rect = m_pMap_tmp->GetSurroundingTiles(plR, "walls");
+	Vec2 pos;
 
-  for (CRectangle r : rect)
-  {
-    if (plR.IntersectsRect(r))
-    {
-      m_pPlayer.lock()->myCollisionMask |= CollisionFlag::CF_Wall;
-      CRectangle intersRect = plR.GetIntersectRect(r);
-      // Oy collision
-      if (intersRect.width >= intersRect.height)
-      {
-        if (plR.IsAbove(r))
-        {
-          if (intersRect.width > 5)
-          {
-            m_pPlayer.lock()->myCollisionSide |= CollisionSide::CS_Bottom;
-            pos.y = r.y;
-          }
-        }
-        else
-        {
-          if (intersRect.width > 5)
-          {
-            m_pPlayer.lock()->myCollisionSide |= CollisionSide::CS_Top;
-            pos.y = r.y + r.height;
-          }
-        }
-        continue;
-      }
-      //Ox collision
+	vector<CRectangle> rect = m_pMap->GetSurroundingTiles(plR, "walls");
 
-      if (plR.IsLeft(r))
-      {
-        m_pPlayer.lock()->myCollisionSide |= CollisionSide::CS_Right;
-        m_pMap_tmp->myCollisionSide |= CollisionSide::CS_Right;
-      }
-      else
-      {
-        m_pMap_tmp->myCollisionSide |= CollisionSide::CS_Left;
-        m_pPlayer.lock()->myCollisionSide |= CollisionSide::CS_Left;
-      }
-    }
-  }
-  m_pPlayer.lock()->m_prevPosition = pos;
+	for (CRectangle r : rect)
+	{
+		if (plR.IntersectsRect(r))
+		{
+			m_pPlayer->myCollisionMask |= CollisionFlag::CF_Wall;
+			CRectangle intersRect = plR.GetIntersectRect(r);
+			// Oy collision
+			if (intersRect.width >= intersRect.height)
+			{
+				if (plR.IsAbove(r))
+				{
+					if (intersRect.width > 5)
+					{
+						m_pPlayer->myCollisionSide |= CollisionSide::CS_Bottom;
+						pos.y = r.y;
+					}
+				}
+				else
+				{
+					if (intersRect.width > 5)
+					{
+						m_pPlayer->myCollisionSide |= CollisionSide::CS_Top;
+						pos.y = r.y + r.height;
+					}
+				}
+				continue;
+			}
+			//Ox collision
 
-  // detect collison with pickup objects
-  rect = m_pMap_tmp->GetSurroundingTiles(plR, "pickup");
-  for (CRectangle r : rect)
-  {
-    if (plR.IntersectsRect(r))
-    {
-      m_pPlayer.lock()->myCollisionMask |= CollisionFlag::CF_Pickup;
-      m_pMap_tmp->RemoveTile(CPoint(r.x + r.width / 2, r.y + r.height / 2), "pickup");
-    }
-  }
+			if (plR.IsLeft(r))
+			{
+				m_pPlayer->myCollisionSide |= CollisionSide::CS_Right;
+				m_pMap->myCollisionSide |= CollisionSide::CS_Right;
+			}
+			else
+			{
+				m_pMap->myCollisionSide |= CollisionSide::CS_Left;
+				m_pPlayer->myCollisionSide |= CollisionSide::CS_Left;
+			}
+		}
+	}
+	m_pPlayer->m_prevPosition = pos;
+
+	// detect collison with pickup objects
+	rect = m_pMap->GetSurroundingTiles(plR, "pickup");
+	for (CRectangle r : rect)
+	{
+		if (plR.IntersectsRect(r))
+		{
+			m_pPlayer->myCollisionMask |= CollisionFlag::CF_Pickup;
+			m_pMap->RemoveTile(CPoint(r.x + r.width / 2, r.y + r.height / 2), "pickup");
+		}
+	}
 
 }
 
 void CGameApp::DoGameLogic()
 {
-	if (!m_pPlayer.lock()->IsAlive())
+	if (!m_pPlayer->IsAlive())
 	{
 		int msgboxID = MessageBox(
 			NULL,
@@ -617,9 +653,9 @@ void CGameApp::DrawHUD()
 {
 	static TCHAR TitleBuffer[255];
 	int life = 0;
-	if (m_pPlayer.lock())
+	if (m_pPlayer)
 	{
-		life = m_pPlayer.lock()->m_life;
+		life = m_pPlayer->m_life;
 	}
 	sprintf_s(TitleBuffer, _T("Honey Collector \t \t Life: %d"), life);
 	SetWindowText(m_hWnd, TitleBuffer);
