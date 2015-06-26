@@ -32,6 +32,10 @@ public:
 	void Tick( float fLockFPS = 0.0f );
 	unsigned long GetFrameRate( LPTSTR lpszString = NULL, size_t size = 0 ) const;
 	float GetTimeElapsed() const;
+	long long getCurrentTime() const
+	{
+		return m_CurrentTime;
+	}
 
 private:
 	/**

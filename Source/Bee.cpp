@@ -6,12 +6,14 @@
 #define BEE_STAND_TIME (double)0.1
 #define BEE_POS_STEP_X float(1.7)
 
-const double Bee::values[] = { 0.00, 2.78, 5.47, 8.00, 10.28, 12.26, 13.86, 15.04, 15.76, 16.00, 15.76, 15.04,\
-13.86, 12.26, 10.28, 8.00, 5.47, 2.78, 0.00, -2.78, -5.47, -8.00, -10.28, -12.26, -13.86, -15.04, -15.76, -16.00,\
--15.76, -15.04, -13.86, -12.26, -10.28, -8.00, -5.47, -2.78};
+const double Bee::values[] = { 0.00, 2.78, 5.47, 8.00, 10.28, 12.26, 13.86, 15.04, 15.76, 16.00, 15.76, 15.04, \
+13.86, 12.26, 10.28, 8.00, 5.47, 2.78, 0.00, -2.78, -5.47, -8.00, -10.28, -12.26, -13.86, -15.04, -15.76, -16.00, \
+- 15.76, -15.04, -13.86, -12.26, -10.28, -8.00, -5.47, -2.78 };
 
-Bee::Bee(std::shared_ptr<TmxMap> map,std::shared_ptr<CPlayer> player)
+Bee::Bee(std::shared_ptr<TmxMap> map, std::shared_ptr<CPlayer> player)
 {
+	lastShootingTime = 0;
+	m_shouldShoot = false;
 	m_pSprite = new AnimatedSprite("data/bee.bmp", RGB(0xff, 0x00, 0xff));
 	m_bIsAlive = true;
 	m_pMap = map;
@@ -26,6 +28,7 @@ Bee::~Bee()
 
 void Bee::Init(const Vec2& position)
 {
+	lastShootingTime = time(0);
 	standStill = 0.f;
 	valuesPointer = BEE_STEPS - 1;
 	isActive = false;
@@ -63,7 +66,7 @@ bool Bee::checkActive()
 		// check if the bee went out from the left side or from the right side
 		if (standFrame.right < 0 || m_pMap.lock()->m_screenWidth <= standFrame.left)
 		{
-		 	isActive = false;
+			isActive = false;
 		}
 	}
 	else
@@ -71,25 +74,56 @@ bool Bee::checkActive()
 		// check if the bee went in from the left side or from the right side
 		if (m_pMap.lock()->m_screenWidth > standFrame.left && standFrame.left > 0.0f || standFrame.right > 0 && standFrame.left < 0)
 		{
-   			isActive = true;
+			isActive = true;
 		}
 	}
 
 	return isActive;
 }
 
+void Bee::checkIfShouldShoot()
+{
+	if (!isActive && !Expired()  )
+	{
+		return;
+	}
+
+	m_shouldShoot = false;
+
+	//check if this bee is in the right position to shoot on Ox axis.
+	if (((m_State & BeeState::FlyLeft) && myPosition.x < m_pPlayer.lock()->myPosition.x) ||
+		((m_State & BeeState::FlyRight) && myPosition.x > m_pPlayer.lock()->myPosition.x))
+	{
+		return;
+	}
+
+	//check if this bee is in the right position to shoot on Oy axis and if it's the right time.
+	if (((m_pPlayer.lock()->myPosition.y - 33.f) < myPosition.y) &&
+		((m_pPlayer.lock()->myPosition.y + 31.f) > myPosition.y))
+	{
+		time_t delta = time(0) - lastShootingTime;
+		if (delta > SHOOTING_FREQUENCY)
+		{
+			m_shouldShoot = true;
+			lastShootingTime = time(0);
+		}
+		return;
+	}	
+}
+
 void Bee::Update(float dt)
 {
-	if (!IsAlive()) 
+	if (!IsAlive())
 	{
 		return;
 	}
 
 	ResolveCollision();
+	checkIfShouldShoot();
 
 	// Update position of the bee related to the position of the map.
 	long delta = (long)(m_pMap.lock()->m_pixelWidth / 2 - m_pMap.lock()->myPosition.x);
-	if (fabsl(delta-oldDelta) > 1)
+	if (fabsl(delta - oldDelta) > 1)
 	{
 		standFrame.right -= (delta - oldDelta);
 		standFrame.left -= (delta - oldDelta);
@@ -104,20 +138,20 @@ void Bee::Update(float dt)
 	standStill += dt;
 	if (standStill >= BEE_STAND_TIME)
 	{
-		if (m_State & BeeState::FlyRight) 
+		if (m_State & BeeState::FlyRight)
 		{
 			myPosition.x += BEE_POS_STEP_X;
-			if (valuesPointer >= BEE_STEPS) 
+			if (valuesPointer >= BEE_STEPS)
 			{
 				valuesPointer = 0;
 			}
 			myPosition.y = m_referencePosition.y + (float)values[valuesPointer++];
 		}
 
-		else if ((m_State & BeeState::FlyLeft)) 
+		else if ((m_State & BeeState::FlyLeft))
 		{
 			myPosition.x -= BEE_POS_STEP_X;
-			if (valuesPointer < 0) 
+			if (valuesPointer < 0)
 			{
 				valuesPointer = BEE_STEPS - 1;
 			}
@@ -144,12 +178,12 @@ void Bee::Update(float dt)
 
 void Bee::Draw() const
 {
-	if (!IsAlive()) 
-	{ 
-		return; 
+	if (!IsAlive())
+	{
+		return;
 	}
 
-	if (!isActive) 
+	if (!isActive)
 	{
 		return;
 	}
@@ -180,12 +214,12 @@ void Bee::Draw() const
 
 void Bee::checkStandingFrameCollision()
 {
-	if (myPosition.x > standFrame.right && m_State == BeeState::FlyRight) 
+	if (myPosition.x > standFrame.right && m_State == BeeState::FlyRight)
 	{
 		myCollisionMask |= BeeCollision::BC_StandFrame;
 		myCollisionSide |= BeeStandFrame::BSF_Right;
 	}
-	else if (myPosition.x < standFrame.left && m_State == BeeState::FlyLeft) 
+	else if (myPosition.x < standFrame.left && m_State == BeeState::FlyLeft)
 	{
 		myCollisionMask |= BeeCollision::BC_StandFrame;
 		myCollisionSide |= BeeStandFrame::BSF_Left;

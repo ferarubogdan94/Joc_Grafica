@@ -9,6 +9,10 @@
 #include "TmxMap.h"
 #include <math.h>
 #include "CPlayer.h"
+#include "CTimer.h"
+#include <ctime>
+
+#define SHOOTING_FREQUENCY 3
 
 enum BeeState
 {
@@ -100,8 +104,17 @@ public:
 	* return false.
 	*/
 	bool checkActive();
+
+	/**
+	* Returns true if this bee should shoot.
+	*/
+	bool shouldShoot() {
+		return m_shouldShoot;
+	}
 	
 private:
+
+	void checkIfShouldShoot();
 
 	/**
 	* A pointer to map that help us to manage the position of the bee relating to the map position.
@@ -140,6 +153,17 @@ private:
 	double standStill;	
 
 	long oldDelta;
+
+	
+	/**
+	* The last time that this bee has shot.
+	*/
+	time_t lastShootingTime;
+
+	/**
+	* Boolean value that is true if and only if this bee should shoot.	
+	*/
+	bool m_shouldShoot;
 };
 
 #endif

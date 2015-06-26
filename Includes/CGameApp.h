@@ -75,7 +75,7 @@ private:
 	/**
 	 * Game timer.
 	 */
-	CTimer m_Timer;        
+	std::shared_ptr<CTimer> m_pTimer;        
 
 	/**
 	 * Used for making sure we update only when fps changes.
@@ -137,7 +137,9 @@ private:
 	 */
 	std::vector<std::shared_ptr<CGameObject>> m_vBees;  
 
-	std::vector<std::shared_ptr<CGameObject>> m_vBullets;
+	std::vector<std::shared_ptr<CGameObject>> m_vPlayerBullets;
+
+	std::vector<std::shared_ptr<CGameObject>> m_vBeesBullets;
 
 	/** 
 	 * A pointer to player.

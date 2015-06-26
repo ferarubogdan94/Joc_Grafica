@@ -307,6 +307,8 @@ bool CGameApp::BuildObjects()
 
 	m_pPlayer = std::make_shared<CPlayer>();
 
+	m_pTimer = std::make_shared<CTimer>();
+
 	m_pMap = std::make_shared<TmxMap>("data/level2.in", "data/tileset.bmp");
 
 	m_pScore = new Score(40, 40);
@@ -348,7 +350,8 @@ void CGameApp::ReleaseObjects()
 {
 	// this will automatically call the d-tors for each shared pointer objects
 	m_vBees.clear();
-	m_vBullets.clear();
+	m_vPlayerBullets.clear();
+	m_vBeesBullets.clear();
 	SAFE_DELETE(m_pScore);
 	SAFE_DELETE(m_pBBuffer);
 	SAFE_DELETE(m_pBackground);
@@ -361,6 +364,10 @@ void CGameApp::ReleaseObjects()
 	{
 		m_pPlayer.reset();
 	}
+	if (m_pTimer.unique())
+	{
+		m_pTimer.reset();
+	}
 }
 
 /**
@@ -372,7 +379,7 @@ void CGameApp::FrameAdvance()
 	static TCHAR TitleBuffer[255];
 
 	// Advance the timer
-	m_Timer.Tick(60);
+	m_pTimer->Tick(60);
 
 	// Skip if app is inactive
 	if (!m_bActive) {
@@ -382,9 +389,9 @@ void CGameApp::FrameAdvance()
 
 	/*
 	// Get / Display the framerate
-	if (m_LastFrameRate != m_Timer.GetFrameRate())
+	if (m_LastFrameRate != m_pTimer->GetFrameRate())
 	{
-	m_LastFrameRate = m_Timer.GetFrameRate(FrameRate, 50);
+	m_LastFrameRate = m_pTimer->GetFrameRate(FrameRate, 50);
 
 	int life = 0;
 
@@ -451,7 +458,7 @@ void CGameApp::ProcessInput()
 	if (pKeyBuffer[VK_SPACE] & 0xF0)
 	{
 		Sleep(100);
-		m_vBullets.push_back(std::make_shared<Bullet>(BulletType::Player_Bullet, m_pPlayer->myPosition, m_pPlayer, m_pMap));
+		m_vPlayerBullets.push_back(std::make_shared<Bullet>(BulletType::Player_Bullet, m_pPlayer->myPosition, m_pPlayer));
 	}
 }
 
@@ -464,17 +471,26 @@ void CGameApp::AnimateObjects()
 	{
 		ExpiredPredicate expiredPred;
 		m_vBees.erase(std::remove_if(m_vBees.begin(), m_vBees.end(), expiredPred), m_vBees.end());
-		m_vBullets.erase(std::remove_if(m_vBullets.begin(), m_vBullets.end(), expiredPred), m_vBullets.end());
+		m_vPlayerBullets.erase(std::remove_if(m_vPlayerBullets.begin(), m_vPlayerBullets.end(), expiredPred), m_vPlayerBullets.end());
 
-		float dt = m_Timer.GetTimeElapsed();
+		float dt = m_pTimer->GetTimeElapsed();
 
 		m_pPlayer->Update(dt);
 		m_pMap->Update(dt);
 
 		UpdateFunctor updateFn(dt);
 		std::for_each(m_vBees.begin(), m_vBees.end(), updateFn);
-		std::for_each(m_vBullets.begin(), m_vBullets.end(), updateFn);
+		std::for_each(m_vPlayerBullets.begin(), m_vPlayerBullets.end(), updateFn);
+		std::for_each(m_vBeesBullets.begin(), m_vBeesBullets.end(), updateFn);
 		bee->Update(dt);
+		for (auto it = m_vBees.begin(); it != m_vBees.end(); ++it)
+		{
+			Bee* tmp_bee = dynamic_cast<Bee*>(it->get());
+			if (tmp_bee->shouldShoot())
+			{
+				m_vBeesBullets.push_back(std::make_shared<Bullet>(BulletType::Bee_Bullet, tmp_bee->myPosition, m_pPlayer));
+			}
+		}
 	}
 }
 
@@ -501,8 +517,8 @@ void CGameApp::DrawObjects()
 
 	DrawFunctor drawFn;
 	std::for_each(m_vBees.begin(), m_vBees.end(), drawFn);
-	std::for_each(m_vBullets.begin(), m_vBullets.end(), drawFn);
-
+	std::for_each(m_vPlayerBullets.begin(), m_vPlayerBullets.end(), drawFn);
+	std::for_each(m_vBeesBullets.begin(), m_vBeesBullets.end(), drawFn);
 
 	bee->Draw();
 
@@ -515,10 +531,8 @@ void CGameApp::DrawObjects()
  */
 void CGameApp::CollisionDetection()
 {
-	m_pPlayer->myCollisionSide = CS_None;
-
-	// collision detection with the main frame
-	for (auto it = m_vBullets.begin(); it != m_vBullets.end(); ++it)
+	// collision detection of bullets with the main frame
+	for (auto it = m_vPlayerBullets.begin(); it != m_vPlayerBullets.end(); ++it)
 	{
 		CGameObject * pGameObj = it->get();
 		Vec2 pos = pGameObj->myPosition;
@@ -538,14 +552,13 @@ void CGameApp::CollisionDetection()
 	}
 
 	//check collision between bullets and bees
-
-	for (auto it1 = m_vBullets.begin(); it1 != m_vBullets.end(); ++it1)
+	for (auto it1 = m_vPlayerBullets.begin(); it1 != m_vPlayerBullets.end(); ++it1)
 	{
 		Bullet* bullet_tmp = dynamic_cast<Bullet*>(it1->get());
 		CRectangle bullet_rect = bullet_tmp->GetRectangle();
 		for (auto it = m_vBees.begin(); it != m_vBees.end(); ++it)
 		{
-			Bee* bee_tmp = dynamic_cast<Bee*>(it->get());		
+			Bee* bee_tmp = dynamic_cast<Bee*>(it->get());
 			if (!bee_tmp->checkActive())
 			{
 				continue;
@@ -558,6 +571,8 @@ void CGameApp::CollisionDetection()
 			}
 		}
 	}
+
+	m_pPlayer->myCollisionSide = CS_None;
 
 	CRectangle plR = m_pPlayer->GetRectangle();
 	//check collision between player and bees
@@ -632,7 +647,6 @@ void CGameApp::CollisionDetection()
 			m_pMap->RemoveTile(CPoint(r.x + r.width / 2, r.y + r.height / 2), "pickup");
 		}
 	}
-
 }
 
 void CGameApp::DoGameLogic()

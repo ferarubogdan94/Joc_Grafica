@@ -5,7 +5,6 @@
 #include "Vec2.h"
 #include "Sprite.h"
 #include "CPlayer.h"
-#include "TmxMap.h"
 
 #define SPEED 60
 
@@ -19,10 +18,11 @@ enum BulletCollision
 {
 	BulletC_Bee = 1,
 };
+
 class Bullet :public CGameObject
 {
 public:
-	Bullet(BulletType type,Vec2 initPos,std::shared_ptr<CPlayer>,std::shared_ptr<TmxMap>);
+	Bullet(BulletType type,Vec2 initPos,std::shared_ptr<CPlayer>);
 	virtual ~Bullet();
 
 public:
@@ -72,8 +72,6 @@ private:
 	* Returns the direction of the bullet( 1 for right and -1 for left).
 	*/
 	int checkDirection(BulletType type,std::shared_ptr<CPlayer>,Vec2);
-
-	std::weak_ptr<TmxMap> m_pMap;
 
 	Sprite*	m_pSprite;
 
