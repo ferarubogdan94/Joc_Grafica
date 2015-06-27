@@ -151,8 +151,6 @@ private:
 	std::shared_ptr<TmxMap> m_pMap;
 
 	Sprite* m_pBackground;
-
-	Bee* bee;
 };
 
 #endif

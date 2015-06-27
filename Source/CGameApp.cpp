@@ -317,15 +317,14 @@ bool CGameApp::BuildObjects()
 	m_pBackground->myPosition.x = MAP_CENTER_X;
 	m_pBackground->myPosition.y = MAP_CENTER_Y;
 
-	for (int i = 0; i < 1; i++)
+
+	for (int i = 0; i < 10; i++)
 	{
 		std::shared_ptr<Bee> bee1 = std::make_shared<Bee>(m_pMap, m_pPlayer);
-		bee1->Init(Vec2(1000 + (i + 1)* 250.f, 300.f));
+		bee1->Init(Vec2(500 + (i + 1)* 450.f, 300.f));
 		m_vBees.push_back(bee1);
 	}
 
-	bee = new Bee(m_pMap, m_pPlayer);
-	bee->Init(Vec2(1000, 300));
 
 	// Success!
 	return true;
@@ -359,7 +358,6 @@ void CGameApp::ReleaseObjects()
 	{
 		m_pMap.reset();
 	}
-	SAFE_DELETE(bee);
 	if (m_pPlayer.unique())
 	{
 		m_pPlayer.reset();
@@ -457,7 +455,13 @@ void CGameApp::ProcessInput()
 
 	if (pKeyBuffer[VK_SPACE] & 0xF0)
 	{
-		Sleep(100);
+		if (m_vPlayerBullets.size())
+		{
+			if (fabs(m_vPlayerBullets.back()->myPosition.x - m_pPlayer->myPosition.x) < 150)
+			{
+				return;
+			}
+		}
 		m_vPlayerBullets.push_back(std::make_shared<Bullet>(BulletType::Player_Bullet, m_pPlayer->myPosition, m_pPlayer));
 	}
 }
@@ -483,13 +487,14 @@ void CGameApp::AnimateObjects()
 		std::for_each(m_vBees.begin(), m_vBees.end(), updateFn);
 		std::for_each(m_vPlayerBullets.begin(), m_vPlayerBullets.end(), updateFn);
 		std::for_each(m_vBeesBullets.begin(), m_vBeesBullets.end(), updateFn);
-		bee->Update(dt);
 		for (auto it = m_vBees.begin(); it != m_vBees.end(); ++it)
 		{
 			Bee* tmp_bee = dynamic_cast<Bee*>(it->get());
 			if (tmp_bee->shouldShoot())
 			{
-				m_vBeesBullets.push_back(std::make_shared<Bullet>(BulletType::Bee_Bullet, tmp_bee->myPosition, m_pPlayer));
+				auto pBullet = std::make_shared<Bullet>(BulletType::Bee_Bullet, tmp_bee->myPosition, m_pPlayer);
+				pBullet.get()->myVelocity.y = +50;
+				m_vBeesBullets.push_back(pBullet);
 			}
 		}
 	}
@@ -504,25 +509,18 @@ void CGameApp::DrawObjects()
 
 	m_pBackground->Draw();
 
-	// nu cred ca e nevoie de asta
-	//HDC hdc = m_pBBuffer->getDC();
-
 	m_pScore->setScore(m_pPlayer->m_score);
-	m_pScore->drawScore();
 
 	m_pPlayer->Draw();
 
-	m_pMap->Draw();
-
-	DrawHUD();
-
 	DrawFunctor drawFn;
+	
+	std::for_each(m_vBeesBullets.begin(), m_vBeesBullets.end(), drawFn);
+	m_pMap->Draw();
+	m_pScore->drawScore();
 	std::for_each(m_vBees.begin(), m_vBees.end(), drawFn);
 	std::for_each(m_vPlayerBullets.begin(), m_vPlayerBullets.end(), drawFn);
-	std::for_each(m_vBeesBullets.begin(), m_vBeesBullets.end(), drawFn);
-
-	bee->Draw();
-
+	DrawHUD();
 	m_pBBuffer->present();
 }
 
@@ -621,8 +619,11 @@ void CGameApp::CollisionDetection()
 		{
 			bee_tmp->myCollisionMask |= BeeCollision::BC_Player;
 			m_pPlayer->myCollisionMask |= GameObjectType::GOT_Bee;
+			m_pPlayer->myCollisionMask |= CollisionFlag::CF_Bee;
 		}
 	}
+
+
 
 	Vec2 pos;
 
