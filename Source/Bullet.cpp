@@ -73,12 +73,14 @@ void Bullet::ResolveCollision()
 {
 	if (myCollisionMask & BulletCollision::BulletC_Bee ||
 		myCollisionSide & CS_Left || myCollisionSide & CS_Right ||
-		myCollisionMask & CF_Wall || myCollisionMask & CF_Enemy)
+		myCollisionMask & CF_Wall || myCollisionMask & CF_Enemy ||
+		myCollisionMask & BulletCollision::BulletC_Player)
 	{
 		m_bIsAlive = false;
 	}
 
 	myCollisionMask = CF_None;
+	myCollisionSide = BulletCollision::BulletC_None;
 }
 
 
@@ -87,7 +89,7 @@ CRectangle Bullet::GetRectangle() const
 	float x = m_pSprite->myPosition.x - GetWidth() / 2 + 5.0f;
 	float y = m_pSprite->myPosition.y - GetHeight() / 2;
 
-	CRectangle r(x, y, GetWidth() - 10, GetHeight());
+	CRectangle r(x, y, GetWidth(), GetHeight());
 	return r;
 }
 

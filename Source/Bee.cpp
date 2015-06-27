@@ -163,17 +163,6 @@ void Bee::Update(float dt)
 	}
 
 	m_pSprite->Update(dt);
-
-	// NOTE: for each async sound played Windows creates a thread for you
-	// but only one, so you cannot play multiple sounds at once.
-	// This creation/destruction of threads also leads to bad performance
-	// so this method is not recommended to be used in complex projects.
-
-
-	// NOTE: For sound you also can use MIDI but it's Win32 API it is a bit hard
-	// see MSDN reference: http://msdn.microsoft.com/en-us/library/ms711640.aspx
-	// In this case you can use a C++ wrapper for it. See the following article:
-	// http://www.codeproject.com/KB/audio-video/midiwrapper.aspx (with code also)
 }
 
 void Bee::Draw() const

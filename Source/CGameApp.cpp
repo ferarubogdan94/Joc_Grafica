@@ -317,7 +317,7 @@ bool CGameApp::BuildObjects()
 	m_pBackground->myPosition.x = MAP_CENTER_X;
 	m_pBackground->myPosition.y = MAP_CENTER_Y;
 
-	for (int i = 0; i < 4; i++)
+	for (int i = 0; i < 1; i++)
 	{
 		std::shared_ptr<Bee> bee1 = std::make_shared<Bee>(m_pMap, m_pPlayer);
 		bee1->Init(Vec2(1000 + (i + 1)* 250.f, 300.f));
@@ -472,6 +472,7 @@ void CGameApp::AnimateObjects()
 		ExpiredPredicate expiredPred;
 		m_vBees.erase(std::remove_if(m_vBees.begin(), m_vBees.end(), expiredPred), m_vBees.end());
 		m_vPlayerBullets.erase(std::remove_if(m_vPlayerBullets.begin(), m_vPlayerBullets.end(), expiredPred), m_vPlayerBullets.end());
+		m_vBeesBullets.erase(std::remove_if(m_vBeesBullets.begin(), m_vBeesBullets.end(), expiredPred), m_vBeesBullets.end());
 
 		float dt = m_pTimer->GetTimeElapsed();
 
@@ -551,6 +552,26 @@ void CGameApp::CollisionDetection()
 		}
 	}
 
+	// collision detection of bullets with the main frame
+	for (auto it = m_vBeesBullets.begin(); it != m_vBeesBullets.end(); ++it)
+	{
+		CGameObject * pGameObj = it->get();
+		Vec2 pos = pGameObj->myPosition;
+
+		pGameObj->myCollisionSide = CS_None;
+		int dx = (int)pos.x - pGameObj->GetWidth() / 2;
+		if (dx < 0)
+		{
+			pGameObj->myCollisionSide |= CS_Left;
+		}
+
+		dx = (int)pos.x - (m_nViewWidth - pGameObj->GetWidth() / 2);
+		if (dx > 0)
+		{
+			pGameObj->myCollisionSide |= CS_Right;
+		}
+	}
+
 	//check collision between bullets and bees
 	for (auto it1 = m_vPlayerBullets.begin(); it1 != m_vPlayerBullets.end(); ++it1)
 	{
@@ -575,6 +596,18 @@ void CGameApp::CollisionDetection()
 	m_pPlayer->myCollisionSide = CS_None;
 
 	CRectangle plR = m_pPlayer->GetRectangle();
+
+	for (auto it = m_vBeesBullets.begin(); it != m_vBeesBullets.end(); ++it)
+	{
+		Bullet* bullet_tmp = dynamic_cast<Bullet*>(it->get());
+		CRectangle rect = bullet_tmp->GetRectangle();
+		if (rect.IntersectsRect(plR))
+		{
+			bullet_tmp->myCollisionMask |= BulletCollision::BulletC_Player;
+			m_pPlayer->myCollisionMask |= CollisionFlag::CF_Bee;
+		}
+	}
+
 	//check collision between player and bees
 	for (auto it = m_vBees.begin(); it != m_vBees.end(); ++it)
 	{
@@ -587,6 +620,7 @@ void CGameApp::CollisionDetection()
 		if (rect.IntersectsRect(plR))
 		{
 			bee_tmp->myCollisionMask |= BeeCollision::BC_Player;
+			m_pPlayer->myCollisionMask |= GameObjectType::GOT_Bee;
 		}
 	}
 

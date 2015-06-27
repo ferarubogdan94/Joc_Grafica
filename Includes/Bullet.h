@@ -16,7 +16,9 @@ enum BulletType
 
 enum BulletCollision
 {
+	BulletC_None = 0,
 	BulletC_Bee = 1,
+	BulletC_Player = 2,
 };
 
 class Bullet :public CGameObject
