@@ -5,7 +5,9 @@
 #define BEE_STEPS 36
 #define BEE_STAND_TIME (double)0.1
 #define BEE_POS_STEP_X float(1.7)
-
+#define SPEED 1.5f
+#define AMPLITUDE 5.0f
+#define PERIOD 5.0f
 const double Bee::values[] = { 0.00, 2.78, 5.47, 8.00, 10.28, 12.26, 13.86, 15.04, 15.76, 16.00, 15.76, 15.04, \
 13.86, 12.26, 10.28, 8.00, 5.47, 2.78, 0.00, -2.78, -5.47, -8.00, -10.28, -12.26, -13.86, -15.04, -15.76, -16.00, \
 - 15.76, -15.04, -13.86, -12.26, -10.28, -8.00, -5.47, -2.78 };
@@ -19,6 +21,8 @@ Bee::Bee(std::shared_ptr<TmxMap> map, std::shared_ptr<CPlayer> player)
 	m_pMap = map;
 	m_pPlayer = player;
 	oldDelta = 0;
+
+	myVelocity.x = -SPEED;
 }
 
 Bee::~Bee()
@@ -136,44 +140,15 @@ void Bee::Update(float dt)
 	}
 
 	standStill += dt;
-	if (standStill >= BEE_STAND_TIME)
+	if (standStill >= 1000)
 	{
-		if (m_State & BeeState::FlyRight)
-		{
-			myPosition.x += BEE_POS_STEP_X;
-			if (valuesPointer >= BEE_STEPS)
-			{
-				valuesPointer = 0;
-			}
-			myPosition.y = m_referencePosition.y + (float)values[valuesPointer++];
-		}
-
-		else if ((m_State & BeeState::FlyLeft))
-		{
-			myPosition.x -= BEE_POS_STEP_X;
-			if (valuesPointer < 0)
-			{
-				valuesPointer = BEE_STEPS - 1;
-			}
-			myPosition.y = m_referencePosition.y - (float)values[valuesPointer--];
-		}
-
-		m_pSprite->myPosition = myPosition;
 		standStill = 0.0;
 	}
 
+	myPosition += myVelocity;
+	myPosition.y = AMPLITUDE * sinf(PERIOD * (float)standStill) + standFrame.bottom;
+	m_pSprite->myPosition = myPosition;
 	m_pSprite->Update(dt);
-
-	// NOTE: for each async sound played Windows creates a thread for you
-	// but only one, so you cannot play multiple sounds at once.
-	// This creation/destruction of threads also leads to bad performance
-	// so this method is not recommended to be used in complex projects.
-
-
-	// NOTE: For sound you also can use MIDI but it's Win32 API it is a bit hard
-	// see MSDN reference: http://msdn.microsoft.com/en-us/library/ms711640.aspx
-	// In this case you can use a C++ wrapper for it. See the following article:
-	// http://www.codeproject.com/KB/audio-video/midiwrapper.aspx (with code also)
 }
 
 void Bee::Draw() const
@@ -234,32 +209,29 @@ void Bee::ResolveCollision()
 	{
 		if (myCollisionSide & BeeStandFrame::BSF_Buttom)
 		{
-			//			myPosition.y = m_prevPosition.y - GetHeight() / 2;
 			myPosition.y = (float)standFrame.bottom;
 		}
 
 		if (myCollisionSide & BeeStandFrame::BSF_Top)
 		{
-			//myPosition.y = m_prevPosition.y + GetHeight() / 2;
+	
 			myPosition.y = (float)standFrame.top;
 		}
 
 		if (myCollisionSide & BeeStandFrame::BSF_Left)
 		{
-			//			m_State = PlayerState::Idle;
-			//			myPosition.x = m_prevPosition.x + GetWidth() / 2 - 1.5f;
 			myPosition.x = (float)standFrame.left;
 			m_State = BeeState::FlyRight;
 			valuesPointer = 0;
+			myVelocity.x = SPEED;
 		}
 
 		if (myCollisionSide & BeeStandFrame::BSF_Right)
 		{
-			//m_State = PlayerState::Idle;
-			//myPosition.x = m_prevPosition.x - GetWidth() / 2 + 1.5f;
 			m_State = BeeState::FlyLeft;
 			myPosition.x = (float)standFrame.right;
 			valuesPointer = BEE_STEPS - 1;
+			myVelocity.x = -SPEED;
 		}
 	}
 
