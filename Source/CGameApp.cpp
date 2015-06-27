@@ -325,7 +325,6 @@ bool CGameApp::BuildObjects()
 		m_vBees.push_back(bee1);
 	}
 
-
 	// Success!
 	return true;
 }
@@ -493,7 +492,7 @@ void CGameApp::AnimateObjects()
 			if (tmp_bee->shouldShoot())
 			{
 				auto pBullet = std::make_shared<Bullet>(BulletType::Bee_Bullet, tmp_bee->myPosition, m_pPlayer);
-				pBullet.get()->myVelocity.y = +50;
+				pBullet.get()->myVelocity.y = +20;
 				m_vBeesBullets.push_back(pBullet);
 			}
 		}
@@ -622,8 +621,6 @@ void CGameApp::CollisionDetection()
 			m_pPlayer->myCollisionMask |= CollisionFlag::CF_Bee;
 		}
 	}
-
-
 
 	Vec2 pos;
 

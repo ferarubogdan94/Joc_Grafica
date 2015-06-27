@@ -6,7 +6,7 @@
 #include "Sprite.h"
 #include "CPlayer.h"
 
-#define SPEED 500
+#define SPEED 300
 
 enum BulletType
 {

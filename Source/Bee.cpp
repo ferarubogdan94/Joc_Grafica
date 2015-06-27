@@ -8,9 +8,7 @@
 #define SPEED 1.5f
 #define AMPLITUDE 5.0f
 #define PERIOD 5.0f
-const double Bee::values[] = { 0.00, 2.78, 5.47, 8.00, 10.28, 12.26, 13.86, 15.04, 15.76, 16.00, 15.76, 15.04, \
-13.86, 12.26, 10.28, 8.00, 5.47, 2.78, 0.00, -2.78, -5.47, -8.00, -10.28, -12.26, -13.86, -15.04, -15.76, -16.00, \
-- 15.76, -15.04, -13.86, -12.26, -10.28, -8.00, -5.47, -2.78 };
+
 
 Bee::Bee(std::shared_ptr<TmxMap> map, std::shared_ptr<CPlayer> player)
 {
@@ -34,7 +32,6 @@ void Bee::Init(const Vec2& position)
 {
 	lastShootingTime = time(0);
 	standStill = 0.f;
-	valuesPointer = BEE_STEPS - 1;
 	isActive = false;
 
 	myPosition = position;
@@ -222,7 +219,6 @@ void Bee::ResolveCollision()
 		{
 			myPosition.x = (float)standFrame.left;
 			m_State = BeeState::FlyRight;
-			valuesPointer = 0;
 			myVelocity.x = SPEED;
 		}
 
@@ -230,7 +226,6 @@ void Bee::ResolveCollision()
 		{
 			m_State = BeeState::FlyLeft;
 			myPosition.x = (float)standFrame.right;
-			valuesPointer = BEE_STEPS - 1;
 			myVelocity.x = -SPEED;
 		}
 	}

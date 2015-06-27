@@ -141,13 +141,6 @@ private:
 	Vec2 m_referencePosition;
 
 	/**
-	 * Discret values for modeling a sinusoidal motion.
-	 */
-	static const double values[36];
-
-	int valuesPointer;
-
-	/**
 	 * The time in which the bee stands still.
 	 */
 	double standStill;	
